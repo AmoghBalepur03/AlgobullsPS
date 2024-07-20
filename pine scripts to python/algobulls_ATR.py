@@ -1,5 +1,7 @@
-import pandas as pd
+import yfinance as yf
+import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 
 # Define different moving average functions
 def ema(series, length):
@@ -46,17 +48,30 @@ def average_true_range(data, length=14, smoothing='RMA', atr_type='Regular', pos
 
     return atr_value
 
-# Example usage
-# data = pd.DataFrame({
-#     'High': [110, 112, 115, 117, 120],
-#     'Low': [100, 105, 108, 111, 113],
-#     'Close': [105, 110, 112, 115, 118],
-#     'TickSize': 0.01,
-#     'PointValue': 1
-# })
+# Download stock data
+ticker = 'AAPL'
+data = yf.download(ticker, start='2022-01-01', end='2023-01-01')
+data['TickSize'] = 0.01
+data['PointValue'] = 1
 
-# atr = average_true_range(data, length=14, smoothing='RMA', atr_type='Regular', position_size=1)
-# print(atr)
+# Calculate ATR with different smoothing techniques
+atr_rma = average_true_range(data, length=14, smoothing='RMA')
+atr_ema = average_true_range(data, length=14, smoothing='EMA')
+atr_sma = average_true_range(data, length=14, smoothing='SMA')
+atr_wma = average_true_range(data, length=14, smoothing='WMA')
 
+# Plot the results
+plt.figure(figsize=(14, 7))
+plt.plot(data.index, atr_rma, label='ATR (RMA)')
+plt.plot(data.index, atr_ema, label='ATR (EMA)')
+plt.plot(data.index, atr_sma, label='ATR (SMA)')
+plt.plot(data.index, atr_wma, label='ATR (WMA)')
+plt.title('Average True Range (ATR) with Different Smoothing Techniques')
+plt.xlabel('Date')
+plt.ylabel('ATR')
+plt.legend()
+plt.show()
 
-
+# Download Apple's stock data for the year 2022 using yfinance.
+# Calculate ATR using RMA, EMA, SMA, and WMA smoothing techniques.
+# Plot the ATR values for each smoothing technique using matplotlib
