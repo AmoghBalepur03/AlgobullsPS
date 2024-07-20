@@ -1,0 +1,76 @@
+import yfinance as yf
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import ta
+
+# Load stock data
+ticker = 'TSLA'  # Tesla as an example
+data = yf.download(ticker, start='2023-01-01', end='2024-01-01')
+
+# Parameters
+sar_start = 0.02
+sar_increment = 0.02
+sar_maximum = 0.2
+ema_len = 200
+macd_fast_length = 12
+macd_slow_length = 26
+signal_length = 9
+
+# Calculate Parabolic SAR
+data['SAR'] = ta.trend.PSARIndicator(data['High'], data['Low'], data['Close'], step=sar_increment, max_step=sar_maximum).psar()
+
+# Calculate EMA
+data['EMA_200'] = ta.trend.EMAIndicator(data['Close'], window=ema_len).ema_indicator()
+
+# Calculate MACD
+macd = ta.trend.MACD(data['Close'], window_slow=macd_slow_length, window_fast=macd_fast_length, window_sign=signal_length)
+data['MACD'] = macd.macd()
+data['Signal'] = macd.macd_signal()
+data['Histogram'] = macd.macd_diff()
+
+# Determine main trend
+data['Main_Trend'] = np.where(data['Close'] < data['EMA_200'], 'Bearish', 'Bullish')
+
+# Conditions
+data['SAR_Long'] = data['SAR'] < data['Low']
+data['SAR_Short'] = data['SAR'] > data['High']
+data['MACD_Long'] = data['Histogram'] > 0
+data['MACD_Short'] = data['Histogram'] < 0
+
+# Long and Short signals
+data['Buy_Signal'] = data['SAR_Long'] & data['MACD_Long'] & (data['Main_Trend'] == 'Bullish')
+data['Sell_Signal'] = data['SAR_Short'] & data['MACD_Short'] & (data['Main_Trend'] == 'Bearish')
+
+# Plotting
+plt.figure(figsize=(14, 8))
+
+# Plot close price
+plt.plot(data.index, data['Close'], label='Close Price', color='black')
+
+# Plot Parabolic SAR
+plt.scatter(data.index, data['SAR'], label='Parabolic SAR', color='blue', marker='.')
+
+# Plot EMA
+plt.plot(data.index, data['EMA_200'], label='EMA 200', color='green')
+
+# Plot buy and sell signals
+plt.plot(data[data['Buy_Signal']].index, data['Close'][data['Buy_Signal']], '^', markersize=10, color='g', label='Buy Signal')
+plt.plot(data[data['Sell_Signal']].index, data['Close'][data['Sell_Signal']], 'v', markersize=10, color='r', label='Sell Signal')
+
+# Adding titles and labels
+plt.title(f'{ticker} - Parabolic SAR, EMA 200, and MACD Signals', fontsize=16)
+plt.xlabel('Date', fontsize=14)
+plt.ylabel('Price', fontsize=14)
+plt.legend()
+plt.grid(True)
+
+# Rotate x-axis labels for better readability
+plt.xticks(rotation=45)
+
+# Show plot
+plt.tight_layout()
+plt.show()
+
+# Print the last few rows to check the signals
+print(data.tail(20))  # Increased to 20 rows to get more context
